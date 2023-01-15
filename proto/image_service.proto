@@ -20,7 +20,22 @@ message UploadImageResponse {
     uint32 size = 2;
 }
 
+// message for DownloadImage request
+message DownloadImageRequest {
+    // image name (without extension)
+    string name = 1;
+}
+
+// message for UploadImage response
+message DownloadImageResponse {
+    oneof data {
+        Info info = 1;
+        bytes chunk_data = 2;
+    }
+}
+
 // service to operate with images (upload/download) and get info about already uploaded images
 service ImageService {
     rpc UploadImage(stream UploadImageRequest) returns (UploadImageResponse) {};
+    rpc DownloadImage(DownloadImageRequest) returns (stream DownloadImageResponse) {};
 }

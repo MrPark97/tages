@@ -15,6 +15,9 @@ import (
 // maximum 1 megabyte
 const maxImageSize = 1 << 20
 
+// 1 kilobyte (just for test, optimal size is near 128 kB)
+const bufferSize = 1024
+
 // LaptopServer is the server that provides laptop services
 type ImageServer struct {
 	pb.UnimplementedImageServiceServer
@@ -64,11 +67,13 @@ func (server *ImageServer) UploadImage(stream pb.ImageService_UploadImageServer)
 			return logError(status.Errorf(codes.Unknown, "cannot receive chunk data: %v", err))
 		}
 
+		// getting chunk of data and calculating size
 		chunk := req.GetChunkData()
 		size := len(chunk)
 
 		log.Printf("received a chunk with size: %d", size)
 
+		// counting image size
 		imageSize += size
 
 		// if image size is too large return error
@@ -102,6 +107,43 @@ func (server *ImageServer) UploadImage(stream pb.ImageService_UploadImageServer)
 	}
 
 	log.Printf("saved the image with name: %s, size: %d", imageName, imageSize)
+
+	return nil
+}
+
+// DownloadImage is a server-streaming RPC to download an image
+func (server *ImageServer) DownloadImage(req *pb.DownloadImageRequest, stream pb.ImageService_DownloadImageServer) error {
+	// get image name from request
+	imageName := req.GetName()
+	log.Printf("receive name of an image from request: %v", imageName)
+
+	// trying to send image from storage
+	err := server.imageStore.Send(
+		stream,
+		imageName,
+		func(chunkData []byte) error {
+			// forming response with chunk data
+			res := &pb.DownloadImageResponse{
+				Data: &pb.DownloadImageResponse_ChunkData{
+					ChunkData: chunkData,
+				},
+			}
+
+			// trying to send response
+			err := stream.Send(res)
+			if err != nil {
+				return err
+			}
+
+			log.Printf("sent chunk of data of size %d bytes:", len(chunkData))
+			return nil
+		},
+	)
+
+	// if there is unexpected error return it
+	if err != nil {
+		return status.Errorf(codes.Internal, "unxepected error: %v", err)
+	}
 
 	return nil
 }

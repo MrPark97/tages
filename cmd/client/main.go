@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"flag"
 	"io"
@@ -11,8 +12,8 @@ import (
 	"time"
 
 	"github.com/MrPark97/tages/pb"
-	"github.com/golang/protobuf/ptypes"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func uploadImage(imageClient pb.ImageServiceClient, imageName string, imagePath string) {
@@ -39,7 +40,7 @@ func uploadImage(imageClient pb.ImageServiceClient, imageName string, imagePath 
 			Info: &pb.Info{
 				Name:      imageName,
 				Type:      filepath.Ext(imagePath),
-				UpdatedAt: ptypes.TimestampNow(),
+				UpdatedAt: timestamppb.Now(),
 			},
 		},
 	}
@@ -87,9 +88,78 @@ func uploadImage(imageClient pb.ImageServiceClient, imageName string, imagePath 
 	log.Printf("image uploaded with name: %s, size: %d", res.GetName(), res.GetSize())
 }
 
+func downloadImage(imageClient pb.ImageServiceClient, imageName string, imagePath string) {
+	// setting up 5 seconds timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// prepare download image request
+	req := &pb.DownloadImageRequest{Name: imageName}
+
+	// trying to call DownloadImage method
+	stream, err := imageClient.DownloadImage(ctx, req)
+	if err != nil {
+		log.Fatal("cannot download image: ", err)
+	}
+
+	// trying to get image info
+	res, err := stream.Recv()
+	if err != nil {
+		log.Fatal("cannot receive response: ", err)
+	}
+	log.Printf("received image info - name: %s, type: %s, updated_at: %s", res.GetInfo().GetName(), res.GetInfo().GetType(), res.GetInfo().GetUpdatedAt())
+
+	// init variables for bytes of image and image size
+	imageData := bytes.Buffer{}
+	imageSize := 0
+
+	for {
+		res, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatal("cannot receive response: ", err)
+		}
+
+		// getting chunk of data and calculating size
+		chunk := res.GetChunkData()
+		size := len(chunk)
+
+		// counting image size
+		imageSize += size
+
+		// trying to write data to buffer
+		_, err = imageData.Write(chunk)
+		if err != nil {
+			log.Fatal("cannot write chunk of data: ", err)
+		}
+	}
+
+	// trying to create file
+	file, err := os.Create(imagePath)
+	if err != nil {
+		log.Fatal("cannot create image file: ", err)
+	}
+
+	// trying to write data to file
+	_, err = imageData.WriteTo(file)
+	if err != nil {
+		log.Fatal("cannot write image to file: ", err)
+	}
+
+	log.Printf("image downloaded with name: %s, size: %d", imageName, imageSize)
+}
+
 // function to upload test image
 func testUploadImage(imageClient pb.ImageServiceClient) {
 	uploadImage(imageClient, "laptop", "tmp/laptop.jpeg")
+}
+
+// function to download test image
+func testDownloadImage(imageClient pb.ImageServiceClient) {
+	uploadImage(imageClient, "laptop", "tmp/laptop.jpeg")
+	downloadImage(imageClient, "laptop", "Downloads/laptop.jpeg")
 }
 
 func main() {
@@ -103,5 +173,5 @@ func main() {
 	}
 
 	imageClient := pb.NewImageServiceClient(conn)
-	testUploadImage(imageClient)
+	testDownloadImage(imageClient)
 }
