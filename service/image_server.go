@@ -4,6 +4,7 @@ package service
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"log"
 
@@ -146,6 +147,32 @@ func (server *ImageServer) DownloadImage(req *pb.DownloadImageRequest, stream pb
 	}
 
 	return nil
+}
+
+// GetUploadedImageTableString forms table string with info about uploaded images and returns it
+func (server *ImageServer) GetUploadedImagesTableString(ctx context.Context, req *pb.GetUploadedImagesTableStringRequest) (*pb.GetUploadedImagesTableStringResponse, error) {
+	// get limit from request
+	limit := req.GetLimit()
+	log.Printf("receive request to form images table string with limit (zero means all images): %d", limit)
+
+	// check for context errors
+	if err := contextError(ctx); err != nil {
+		return nil, err
+	}
+
+	// trying to form images table string
+	uploadedImagesTableString := server.imageStore.String(limit)
+
+	// log results
+	log.Printf("formed images table string with limit: %d", limit)
+	fmt.Print(uploadedImagesTableString)
+
+	// form response
+	res := &pb.GetUploadedImagesTableStringResponse{
+		Table: uploadedImagesTableString,
+	}
+
+	return res, nil
 }
 
 // function to log and return error

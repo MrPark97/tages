@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/MrPark97/tages/pb"
 	"google.golang.org/grpc/codes"
@@ -21,6 +23,8 @@ type ImageStore interface {
 	Save(imageName string, imageType string, imageData bytes.Buffer, imageUpdateTime time.Time) (string, error)
 	// Send sends an existing image to the client from the store
 	Send(stream pb.ImageService_DownloadImageServer, imageName string, send func(chunkData []byte) error) error
+	// String forms an uploaded images table string from the store
+	String(limit uint32) string
 }
 
 // DiskImageStore is a struct to store images on disk
@@ -92,8 +96,8 @@ func (store *DiskImageStore) Save(imageName string, imageType string, imageData 
 // Send sends image info first, then sends chunks of data one by one via send function
 func (store *DiskImageStore) Send(stream pb.ImageService_DownloadImageServer, imageName string, send func(chunkData []byte) error) error {
 	// lock in-memory storage
-	store.mutex.RLock()
-	defer store.mutex.RUnlock()
+	store.mutex.Lock()
+	defer store.mutex.Unlock()
 
 	ctx := stream.Context()
 
@@ -160,4 +164,48 @@ func (store *DiskImageStore) Send(stream pb.ImageService_DownloadImageServer, im
 	}
 
 	return nil
+}
+
+// String forms an uploaded images table string from the store
+func (store *DiskImageStore) String(limit uint32) string {
+	// lock in-memory storage
+	store.mutex.Lock()
+	defer store.mutex.Unlock()
+
+	// if there is no limit set it as store length
+	storeLen := len(store.images)
+	if limit == uint32(0) {
+		limit = uint32(storeLen)
+	}
+
+	// find string with maximal length (for space padding)
+	baseFullNameLen := utf8.RuneCountInString("Имя файла ")
+	maxFullNameLen := baseFullNameLen
+	i := uint32(0)
+	for imageName, imageInfo := range store.images {
+		if i >= limit {
+			break
+		}
+		if curFullNameLen := utf8.RuneCountInString(imageName) + utf8.RuneCountInString(imageInfo.Type); curFullNameLen > maxFullNameLen {
+			maxFullNameLen = curFullNameLen
+		}
+		i += uint32(1)
+	}
+
+	// generate table string using calculated value
+	imagesTableString := "Имя файла " + strings.Repeat(" ", maxFullNameLen-baseFullNameLen) + "| Дата создания       | Дата обновления\n"
+	i = uint32(0)
+	fullName := ""
+	for imageName, imageInfo := range store.images {
+		if i >= limit {
+			break
+		}
+
+		fullName = imageName + imageInfo.Type
+
+		imagesTableString += fullName + strings.Repeat(" ", maxFullNameLen-utf8.RuneCountInString(fullName)) + "| " + fmt.Sprintf(imageInfo.CreatedAt.Local().Format("02.01.2006 15:04:05")) + " | " + fmt.Sprintf(imageInfo.UpdatedAt.Local().Format("02.01.2006 15:04:05")) + "\n"
+		i += uint32(1)
+	}
+
+	return imagesTableString
 }

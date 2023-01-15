@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -107,7 +108,7 @@ func downloadImage(imageClient pb.ImageServiceClient, imageName string, imagePat
 	if err != nil {
 		log.Fatal("cannot receive response: ", err)
 	}
-	log.Printf("received image info - name: %s, type: %s, updated_at: %s", res.GetInfo().GetName(), res.GetInfo().GetType(), res.GetInfo().GetUpdatedAt())
+	log.Printf("received image info - name: %s, type: %s, updated_at: %s", res.GetInfo().GetName(), res.GetInfo().GetType(), res.GetInfo().GetUpdatedAt().AsTime())
 
 	// init variables for bytes of image and image size
 	imageData := bytes.Buffer{}
@@ -151,6 +152,27 @@ func downloadImage(imageClient pb.ImageServiceClient, imageName string, imagePat
 	log.Printf("image downloaded with name: %s, size: %d", imageName, imageSize)
 }
 
+func getUploadedImagesTableString(imageClient pb.ImageServiceClient, limit uint32) {
+	// forming request
+	req := &pb.GetUploadedImagesTableStringRequest{
+		Limit: limit,
+	}
+
+	// set 5s timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// trying to send request
+	res, err := imageClient.GetUploadedImagesTableString(ctx, req)
+	if err != nil {
+		log.Fatal("cannot get table string: ", err)
+	}
+
+	// log results
+	log.Printf("got table string with limit: %d", limit)
+	fmt.Print(res.GetTable())
+}
+
 // function to upload test image
 func testUploadImage(imageClient pb.ImageServiceClient) {
 	uploadImage(imageClient, "laptop", "tmp/laptop.jpeg")
@@ -160,6 +182,16 @@ func testUploadImage(imageClient pb.ImageServiceClient) {
 func testDownloadImage(imageClient pb.ImageServiceClient) {
 	uploadImage(imageClient, "laptop", "tmp/laptop.jpeg")
 	downloadImage(imageClient, "laptop", "Downloads/laptop.jpeg")
+}
+
+// function to get all uploaded images table string
+func testGetUploadedImagesTableString(imageClient pb.ImageServiceClient) {
+	uploadImage(imageClient, "laptop", "tmp/laptop.jpeg")
+	time.Sleep(2 * time.Second)
+	uploadImage(imageClient, "macbook", "tmp/macbook.png")
+	time.Sleep(2 * time.Second)
+	uploadImage(imageClient, "laptop", "tmp/laptop.jpeg")
+	getUploadedImagesTableString(imageClient, 0)
 }
 
 func main() {
@@ -173,5 +205,5 @@ func main() {
 	}
 
 	imageClient := pb.NewImageServiceClient(conn)
-	testDownloadImage(imageClient)
+	testGetUploadedImagesTableString(imageClient)
 }

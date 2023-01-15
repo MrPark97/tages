@@ -34,8 +34,20 @@ message DownloadImageResponse {
     }
 }
 
+// message for GetUploadedImagesTableString request
+message GetUploadedImagesTableStringRequest {
+    // limit equality to zero tells that there is no limit (request all images)
+    uint32 limit = 1;
+}
+
+// message for GetUploadedImagesTableString response
+message GetUploadedImagesTableStringResponse {
+    string table = 1;
+}
+
 // service to operate with images (upload/download) and get info about already uploaded images
 service ImageService {
+    rpc GetUploadedImagesTableString(GetUploadedImagesTableStringRequest) returns (GetUploadedImagesTableStringResponse) {};
     rpc UploadImage(stream UploadImageRequest) returns (UploadImageResponse) {};
     rpc DownloadImage(DownloadImageRequest) returns (stream DownloadImageResponse) {};
 }

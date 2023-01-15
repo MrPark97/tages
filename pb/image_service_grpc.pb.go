@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ImageServiceClient interface {
+	GetUploadedImagesTableString(ctx context.Context, in *GetUploadedImagesTableStringRequest, opts ...grpc.CallOption) (*GetUploadedImagesTableStringResponse, error)
 	UploadImage(ctx context.Context, opts ...grpc.CallOption) (ImageService_UploadImageClient, error)
 	DownloadImage(ctx context.Context, in *DownloadImageRequest, opts ...grpc.CallOption) (ImageService_DownloadImageClient, error)
 }
@@ -32,6 +33,15 @@ type imageServiceClient struct {
 
 func NewImageServiceClient(cc grpc.ClientConnInterface) ImageServiceClient {
 	return &imageServiceClient{cc}
+}
+
+func (c *imageServiceClient) GetUploadedImagesTableString(ctx context.Context, in *GetUploadedImagesTableStringRequest, opts ...grpc.CallOption) (*GetUploadedImagesTableStringResponse, error) {
+	out := new(GetUploadedImagesTableStringResponse)
+	err := c.cc.Invoke(ctx, "/tages.ImageService/GetUploadedImagesTableString", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *imageServiceClient) UploadImage(ctx context.Context, opts ...grpc.CallOption) (ImageService_UploadImageClient, error) {
@@ -104,6 +114,7 @@ func (x *imageServiceDownloadImageClient) Recv() (*DownloadImageResponse, error)
 // All implementations must embed UnimplementedImageServiceServer
 // for forward compatibility
 type ImageServiceServer interface {
+	GetUploadedImagesTableString(context.Context, *GetUploadedImagesTableStringRequest) (*GetUploadedImagesTableStringResponse, error)
 	UploadImage(ImageService_UploadImageServer) error
 	DownloadImage(*DownloadImageRequest, ImageService_DownloadImageServer) error
 	mustEmbedUnimplementedImageServiceServer()
@@ -113,6 +124,9 @@ type ImageServiceServer interface {
 type UnimplementedImageServiceServer struct {
 }
 
+func (UnimplementedImageServiceServer) GetUploadedImagesTableString(context.Context, *GetUploadedImagesTableStringRequest) (*GetUploadedImagesTableStringResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUploadedImagesTableString not implemented")
+}
 func (UnimplementedImageServiceServer) UploadImage(ImageService_UploadImageServer) error {
 	return status.Errorf(codes.Unimplemented, "method UploadImage not implemented")
 }
@@ -130,6 +144,24 @@ type UnsafeImageServiceServer interface {
 
 func RegisterImageServiceServer(s grpc.ServiceRegistrar, srv ImageServiceServer) {
 	s.RegisterService(&ImageService_ServiceDesc, srv)
+}
+
+func _ImageService_GetUploadedImagesTableString_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUploadedImagesTableStringRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ImageServiceServer).GetUploadedImagesTableString(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tages.ImageService/GetUploadedImagesTableString",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ImageServiceServer).GetUploadedImagesTableString(ctx, req.(*GetUploadedImagesTableStringRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _ImageService_UploadImage_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -185,7 +217,12 @@ func (x *imageServiceDownloadImageServer) Send(m *DownloadImageResponse) error {
 var ImageService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "tages.ImageService",
 	HandlerType: (*ImageServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetUploadedImagesTableString",
+			Handler:    _ImageService_GetUploadedImagesTableString_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "UploadImage",
