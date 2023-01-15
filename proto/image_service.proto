@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package tages;
+
+option go_package = "github.com/MrPark97/tages/pb";
+
+import "info_message.proto";
+
+// message for UploadImage request
+message UploadImageRequest {
+    oneof data {
+        Info info = 1;
+        bytes chunk_data = 2;
+    }
+}
+
+// message for UploadImage Response
+message UploadImageResponse {
+    string name = 1;
+    uint32 size = 2;
+}
+
+// service to operate with images (upload/download) and get info about already uploaded images
+service ImageService {
+    rpc UploadImage(stream UploadImageRequest) returns (UploadImageResponse) {};
+}

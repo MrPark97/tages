@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package tages;
+
+option go_package = "github.com/MrPark97/tages/pb";
+
+import "google/protobuf/timestamp.proto";
+
+// message to operate image information
+message Info {
+    // image name string
+    string name = 1;
+    // image type string (with dot)
+    string type = 2;
+    // image update time timestamp
+    google.protobuf.Timestamp updated_at = 3;
+}
