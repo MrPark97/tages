@@ -14,3 +14,5 @@ docker_build:
 	docker build -t test:latest .
 docker_run:
 	docker run --name test -p 8080:8080 test:latest
+
+.PHONY: clean gen server client test cert 
