@@ -20,10 +20,15 @@ Forms Table string with uploaded images info in the form:
 
 ![Example of table](table.png "example of table")
 
+### Concurrency limiting
+
+Service limits number of concurrent workers on stream methods (Upload and Download) by 10
+and on Unary (GetUploadedImagesTableString) by 100
+using Stream and Unary ServerInterceptor correspondingly
+
 ## What can be done in the future
 
 * Persistent store (using remote disk or Bind mounts + Redis)
-* Store logic outside, only service logic inside
 * More convenient logs (using logrus)
 * Metrics
 * More tests
