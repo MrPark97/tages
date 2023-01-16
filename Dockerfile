@@ -8,6 +8,7 @@ RUN go build -o main cmd/server/main.go
 FROM alpine:3.17
 WORKDIR /app
 COPY --from=builder /app/main .
+COPY ./cert ./cert
 
 VOLUME [ "/app/img" ]
 EXPOSE 8080
