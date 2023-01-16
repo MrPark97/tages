@@ -22,13 +22,19 @@ const bufferSize = 1024
 // LaptopServer is the server that provides laptop services
 type ImageServer struct {
 	pb.UnimplementedImageServiceServer
-	imageStore ImageStore
+	imageStore                               ImageStore
+	UploadImageLimitChannel                  chan struct{}
+	DownloadImageLimitChannel                chan struct{}
+	GetUploadedImagesTableStringLimitChannel chan struct{}
 }
 
 // NewImageServer returns a new ImageServer
 func NewImageServer(imageStore ImageStore) *ImageServer {
 	return &ImageServer{
-		imageStore: imageStore,
+		imageStore:                               imageStore,
+		UploadImageLimitChannel:                  make(chan struct{}, 10),
+		DownloadImageLimitChannel:                make(chan struct{}, 10),
+		GetUploadedImagesTableStringLimitChannel: make(chan struct{}, 100),
 	}
 }
 

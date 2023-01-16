@@ -20,7 +20,10 @@ func main() {
 
 	imageServer := service.NewImageServer(imageStore)
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(service.UnaryServerInterceptor),
+		grpc.StreamInterceptor(service.StreamServerInterceptor),
+	)
 	pb.RegisterImageServiceServer(grpcServer, imageServer)
 
 	address := fmt.Sprintf("0.0.0.0:%d", *port)

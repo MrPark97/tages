@@ -10,6 +10,8 @@ client:
 	go run cmd/client/main.go -address 0.0.0.0:8080
 test:
 	go test -cover -race ./...
+cert:
+	cd cert; ./gen.sh; cd ..
 docker_build:
 	docker build -t test:latest .
 docker_run:
