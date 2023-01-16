@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestServerCreateLaptop(t *testing.T) {
+func TestServerGetUploadedImagesTableString(t *testing.T) {
 	t.Parallel()
 
 	imageStore := service.NewDiskImageStore("../tmp")

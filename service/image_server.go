@@ -19,7 +19,7 @@ const maxImageSize = 1 << 20
 // 1 kilobyte (just for test, optimal size is near 128 kB)
 const bufferSize = 1024
 
-// LaptopServer is the server that provides laptop services
+// ImageServer is the server that provides Image services
 type ImageServer struct {
 	pb.UnimplementedImageServiceServer
 	imageStore                               ImageStore
