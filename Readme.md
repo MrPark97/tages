@@ -18,7 +18,7 @@ Forms Table string with uploaded images info in the form:
 
 `Имя файла | Дата создания | Дата обновления`
 
-![Example of table](image.png "example of table")
+![Example of table](table.png "example of table")
 
 ## What can be done in the future
 
